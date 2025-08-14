@@ -11,7 +11,10 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          config.allowUnfree = true;
+          config = {
+            allowUnfree = true;
+            android_sdk.accept_license = true; # ✅ Accept Android SDK license
+          };
         };
 
         sharedTools = with pkgs; [
@@ -32,9 +35,9 @@
           name = "flutter-dev-shell";
           buildInputs = sharedTools ++ [
             pkgs.flutter
-            pkgs.androidsdk.platformtools
+            pkgs.android-tools
             pkgs.openjdk
-            pkgs.androidsdk.buildtools
+            pkgs.androidsdk
           ];
           shellHook = ''
             echo "📱 Flutter dev shell with Android SDK & OpenJDK — Enjoy Rohanbatrain’s Nix Config!"
@@ -61,9 +64,9 @@
           buildInputs = sharedTools ++ [
             pkgs.uv
             pkgs.flutter
-            pkgs.androidsdk.platformtools
+            pkgs.android-tools         # ✅ ADB/fastboot tools
             pkgs.openjdk
-            pkgs.androidsdk.buildtools
+            pkgs.androidsdk
             pkgs.nodejs
             pkgs.pnpm
             pkgs.typescript
