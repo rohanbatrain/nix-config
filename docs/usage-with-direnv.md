@@ -1,0 +1,103 @@
+# Using Shared nix-config Flake with direnv in Your Project
+
+This guide explains how to seamlessly reuse your shared `nix-config` flake development environments inside **separate project repositories** using [direnv](https://direnv.net/) and Nix flakes.
+
+---
+
+## Prerequisites
+
+- You have a working [nix-config flake](https://github.com/yourusername/nix-config) with defined dev shells (e.g., `full`, `python`, `flutter`, `web`).
+- You have [Nix](https://nixos.org/download.html) installed with flakes support.
+- You have [direnv](https://direnv.net/) installed and enabled in your shell.
+
+---
+
+## Step 1: Install and enable direnv (if not already)
+
+On macOS with Homebrew:
+
+```bash
+brew install direnv
+````
+
+Add the following line to your shell configuration:
+
+* For **bash** (`~/.bashrc` or `~/.bash_profile`):
+
+  ```bash
+  eval "$(direnv hook bash)"
+  ```
+
+* For **zsh** (`~/.zshrc`):
+
+  ```bash
+  eval "$(direnv hook zsh)"
+  ```
+
+Reload your shell or source the config file, e.g.:
+
+```bash
+source ~/.zshrc
+```
+
+---
+
+## Step 2: Create a `.envrc` file in your project repository
+
+In the root of your project repo, create a `.envrc` file with the following content:
+
+```bash
+use flake github:yourusername/nix-config#full
+```
+
+> Replace `yourusername` and the flake name/path if different.
+> You can also use other shells like `#python`, `#flutter`, `#web` depending on what you want to load.
+
+---
+
+## Step 3: Allow direnv in your project
+
+Run this command inside your project directory to allow direnv to load the environment:
+
+```bash
+direnv allow
+```
+
+---
+
+## Step 4: Enjoy automatic environment loading
+
+Now, every time you `cd` into your project directory, direnv will:
+
+* Automatically load the `full` (or chosen) development environment
+* Provide you with all tools and dependencies defined in your shared nix-config flake
+* Isolate environment changes to your project directory only
+
+You can verify by running commands like:
+
+```bash
+flutter --version
+python --version
+pnpm --version
+```
+
+---
+
+## Notes
+
+* If you update your nix-config flake, just run `direnv reload` or re-enter the directory.
+* This approach ensures consistent, reproducible developer environments across all your projects.
+* You can have different `.envrc` files per project referencing different shells or flakes if needed.
+
+---
+
+Happy hacking! 🚀
+
+---
+
+## References
+
+* [direnv Official Documentation](https://direnv.net/)
+* [Nix Flakes Documentation](https://nixos.wiki/wiki/Flakes)
+* [nix-config Flake Repository](https://github.com/yourusername/nix-config)
+
