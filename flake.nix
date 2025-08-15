@@ -7,11 +7,19 @@
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
 
-    # nix-homebrew only — no taps as inputs
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
+
+    homebrew-core = {
+      url = "github:homebrew/homebrew-core";
+      flake = false;
+    };
+    homebrew-cask = {
+      url = "github:homebrew/homebrew-cask";
+      flake = false;
+    };
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, nix-homebrew, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, nix-homebrew, homebrew-core, homebrew-cask, ... }:
   let
     system = "aarch64-darwin";
 
@@ -85,7 +93,6 @@
       '';
     };
 
-    # nix-darwin system configuration
     darwinConfiguration = { pkgs, config, ... }: {
       nixpkgs.config = {
         allowUnfree = true;
@@ -108,42 +115,37 @@
       system.stateVersion = 6;
       nixpkgs.hostPlatform = system;
 
-      # ✅ nix-homebrew configuration with raw GitHub URLs
+      # nix-homebrew config
       nix-homebrew = {
         enable = true;
         enableRosetta = true;
         user = "rohan";
-
         taps = {
-          "homebrew/homebrew-core" = "https://github.com/Homebrew/homebrew-core";
-          "homebrew/homebrew-cask" = "https://github.com/Homebrew/homebrew-cask";
+          "homebrew/homebrew-core" = homebrew-core;
+          "homebrew/homebrew-cask" = homebrew-cask;
         };
-
         mutableTaps = false;
       };
 
-      # Align homebrew.taps
+      # Align homebrew taps with nix-homebrew config
       homebrew.taps = builtins.attrNames config.nix-homebrew.taps;
 
-      # System applications linking
       system.activationScripts.applications.text = let
         env = pkgs.buildEnv {
           name = "system-applications";
           paths = config.environment.systemPackages;
           pathsToLink = "/Applications";
         };
-      in
-        pkgs.lib.mkForce ''
-          echo "setting up /Applications..." >&2
-          rm -rf /Applications/Nix\ Apps
-          mkdir -p /Applications/Nix\ Apps
-          find ${env}/Applications -maxdepth 1 -type l -exec readlink '{}' + |
-          while read -r src; do
-            app_name=$(basename "$src")
-            echo "copying $src" >&2
-            ${pkgs.mkalias}/bin/mkalias "$src" "/Applications/Nix Apps/$app_name"
-          done
-        '';
+      in pkgs.lib.mkForce ''
+        echo "setting up /Applications..." >&2
+        rm -rf /Applications/Nix\ Apps
+        mkdir -p /Applications/Nix\ Apps
+        find ${env}/Applications -maxdepth 1 -type l -exec readlink '{}' + | while read -r src; do
+          app_name=$(basename "$src")
+          echo "copying $src" >&2
+          ${pkgs.mkalias}/bin/mkalias "$src" "/Applications/Nix Apps/$app_name"
+        done
+      '';
     };
 
   in {
