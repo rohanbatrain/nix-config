@@ -7,9 +7,11 @@
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, nix-homebrew, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, nix-homebrew, home-manager, ... }:
     let
       system = "aarch64-darwin";
 
@@ -22,7 +24,6 @@
       };
 
       sharedTools = with pkgs; [
-        git
         jq
         nixpkgs-fmt
       ];
@@ -82,6 +83,25 @@
           echo "💣 Full dev shell with EVERYTHING — Welcome!"
         '';
       };
+      
+      homeConfiguration = { pkgs, ... }: {
+        # The homeDirectory is managed by nix-darwin, so we don't need it here.
+        # home.homeDirectory = "/Users/rohan";
+        home.username = "rohan";
+        home.stateVersion = "24.05"; 
+        
+        home.packages = with pkgs; [
+          git
+        ];
+        
+        programs.git = {
+          enable = true;
+          userName = "Rohan Batra";
+          userEmail = "116573125+rohanbatrain@users.noreply.github.com";
+        };
+
+        programs.home-manager.enable = true;
+      };
 
       darwinConfiguration = { pkgs, config, ... }: {
         nixpkgs.config = {
@@ -89,18 +109,28 @@
         };
         environment.systemPackages = [
           pkgs.vim
-          #pkgs.bitwarden-desktop
           pkgs.mkalias
           pkgs.alacritty
         ];
-	homebrew = {
-	  enable = true;
-	  casks = [
-	    "warp"
-	  ];
-	};
-	
 
+        # Define the user's home directory here.
+        users.users.rohan.home = "/Users/rohan";
+        
+        homebrew = {
+          user = "rohan";
+          enable = true;
+          brews = [
+            "mas"
+          ];
+          casks = [
+            "warp"
+          ];
+          masApps = {
+            "Bitwarden"=1352778147;
+          };
+          onActivation.cleanup = "zap";
+        };
+        
         fonts.packages = [
           pkgs.nerd-fonts.jetbrains-mono
         ];
@@ -134,6 +164,7 @@
         modules = [
           darwinConfiguration
           nix-homebrew.darwinModules.nix-homebrew
+          home-manager.darwinModules.home-manager
           {
             nix-homebrew = {
               enable = true;
@@ -141,6 +172,10 @@
               user = "rohan";
               autoMigrate = true;
             };
+            
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.rohan = homeConfiguration;
           }
         ];
       };
