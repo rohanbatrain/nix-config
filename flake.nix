@@ -6,182 +6,162 @@
     flake-utils.url = "github:numtide/flake-utils";
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
-
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
-
-    homebrew-core = {
-      url = "github:homebrew/homebrew-core";
-      flake = false;
-    };
-    homebrew-cask = {
-      url = "github:homebrew/homebrew-cask";
-      flake = false;
-    };
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, nix-homebrew, homebrew-core, homebrew-cask, ... }:
-  let
-    system = "aarch64-darwin";
+  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, nix-homebrew, ... }:
+    let
+      system = "aarch64-darwin";
 
-    pkgs = import nixpkgs {
-      inherit system;
-      config = {
-        allowUnfree = true;
-        android_sdk.accept_license = true;
-      };
-    };
-
-    sharedTools = with pkgs; [
-      git
-      jq
-      nixpkgs-fmt
-    ];
-
-    pythonShell = pkgs.mkShell {
-      name = "python-dev-shell";
-      buildInputs = sharedTools ++ [ pkgs.uv ];
-      shellHook = ''
-        echo "🐍 Python dev shell powered by uv — Welcome!"
-      '';
-    };
-
-    flutterShell = pkgs.mkShell {
-      name = "flutter-dev-shell";
-      buildInputs = sharedTools ++ [
-        pkgs.flutter
-        pkgs.android-tools
-        pkgs.openjdk
-        pkgs.androidsdk
-      ];
-      shellHook = ''
-        echo "📱 Flutter dev shell with Android SDK & OpenJDK — Welcome!"
-      '';
-    };
-
-    webShell = pkgs.mkShell {
-      name = "web-dev-shell";
-      buildInputs = sharedTools ++ [
-        pkgs.nodejs
-        pkgs.pnpm
-        pkgs.typescript
-        pkgs.prettier
-        pkgs.eslint
-        pkgs.esbuild
-      ];
-      shellHook = ''
-        echo "🌐 Web dev shell — Welcome!"
-      '';
-    };
-
-    fullShell = pkgs.mkShell {
-      name = "full-dev-shell";
-      buildInputs = sharedTools ++ [
-        pkgs.uv
-        pkgs.flutter
-        pkgs.android-tools
-        pkgs.openjdk
-        pkgs.androidsdk
-        pkgs.nodejs
-        pkgs.pnpm
-        pkgs.typescript
-        pkgs.prettier
-        pkgs.eslint
-        pkgs.esbuild
-      ];
-      shellHook = ''
-        echo "💣 Full dev shell with EVERYTHING — Welcome!"
-      '';
-    };
-
-    darwinConfiguration = { pkgs, config, ... }: {
-      nixpkgs.config = {
-        allowUnfree = true;
-      };
-
-      environment.systemPackages = [
-        pkgs.vim
-        #pkgs.bitwarden-desktop
-        pkgs.mkalias
-        pkgs.alacritty
-      ];
-
-      fonts.packages = [
-        pkgs.nerd-fonts.jetbrains-mono
-      ];
-
-      nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
-      system.configurationRevision = self.rev or self.dirtyRev or null;
-      system.stateVersion = 6;
-      nixpkgs.hostPlatform = system;
-
-      nix-homebrew = {
-        enable = true;
-        enableRosetta = true;
-        user = "rohan";
-	autoMigrate = true;
-        taps = {
-          "homebrew/homebrew-core" = homebrew-core;
-          "homebrew/homebrew-cask" = homebrew-cask;
+      pkgs = import nixpkgs {
+        inherit system;
+        config = {
+          allowUnfree = true;
+          android_sdk.accept_license = true;
         };
-        mutableTaps = false;
-	
       };
 
-      homebrew.taps = builtins.attrNames config.nix-homebrew.taps;
-
-      # Install Warp via Homebrew cask
-      homebrew.brews = ["mas"];
-      homebrew.casks = [ "warp" ];
-      #homebrew.masApps = {};
-      homebrew.onActivation.cleanup = "zap";
-      homebrew.onActivation.autoUpdate = "true";
-      homebrew.onActivation.upgrade = "true";
-
-      system.activationScripts.applications.text = let
-        env = pkgs.buildEnv {
-          name = "system-applications";
-          paths = config.environment.systemPackages;
-          pathsToLink = "/Applications";
-        };
-      in pkgs.lib.mkForce ''
-        echo "setting up /Applications..." >&2
-        rm -rf /Applications/Nix\ Apps
-        mkdir -p /Applications/Nix\ Apps
-        find ${env}/Applications -maxdepth 1 -type l -exec readlink '{}' + | while read -r src; do
-          app_name=$(basename "$src")
-          echo "copying $src" >&2
-          ${pkgs.mkalias}/bin/mkalias "$src" "/Applications/Nix Apps/$app_name"
-        done
-      '';
-    };
-
-  in {
-    darwinConfigurations."sitar-2" = nix-darwin.lib.darwinSystem {
-      modules = [
-        nix-homebrew.darwinModules.nix-homebrew
-        darwinConfiguration
+      sharedTools = with pkgs; [
+        git
+        jq
+        nixpkgs-fmt
       ];
-    };
 
-    devShells.${system} = {
-      default = pkgs.mkShell {
-        name = "default-dev-shell";
-        buildInputs = sharedTools;
+      pythonShell = pkgs.mkShell {
+        name = "python-dev-shell";
+        buildInputs = sharedTools ++ [ pkgs.uv ];
         shellHook = ''
-          echo "👋 Welcome to the shared tools shell!"
+          echo "🐍 Python dev shell powered by uv — Welcome!"
         '';
       };
 
-      python = pythonShell;
-      flutter = flutterShell;
-      web = webShell;
-      full = fullShell;
+      flutterShell = pkgs.mkShell {
+        name = "flutter-dev-shell";
+        buildInputs = sharedTools ++ [
+          pkgs.flutter
+          pkgs.android-tools
+          pkgs.openjdk
+          pkgs.androidsdk
+        ];
+        shellHook = ''
+          echo "📱 Flutter dev shell with Android SDK & OpenJDK — Welcome!"
+        '';
+      };
+
+      webShell = pkgs.mkShell {
+        name = "web-dev-shell";
+        buildInputs = sharedTools ++ [
+          pkgs.nodejs
+          pkgs.pnpm
+          pkgs.typescript
+          pkgs.prettier
+          pkgs.eslint
+          pkgs.esbuild
+        ];
+        shellHook = ''
+          echo "🌐 Web dev shell — Welcome!"
+        '';
+      };
+
+      fullShell = pkgs.mkShell {
+        name = "full-dev-shell";
+        buildInputs = sharedTools ++ [
+          pkgs.uv
+          pkgs.flutter
+          pkgs.android-tools
+          pkgs.openjdk
+          pkgs.androidsdk
+          pkgs.nodejs
+          pkgs.pnpm
+          pkgs.typescript
+          pkgs.prettier
+          pkgs.eslint
+          pkgs.esbuild
+        ];
+        shellHook = ''
+          echo "💣 Full dev shell with EVERYTHING — Welcome!"
+        '';
+      };
+
+      darwinConfiguration = { pkgs, config, ... }: {
+        nixpkgs.config = {
+          allowUnfree = true;
+        };
+        environment.systemPackages = [
+          pkgs.vim
+          #pkgs.bitwarden-desktop
+          pkgs.mkalias
+          pkgs.alacritty
+        ];
+	homebrew = {
+	  enable = true;
+	  casks = [
+	    "warp"
+	  ];
+	};
+	
+
+        fonts.packages = [
+          pkgs.nerd-fonts.jetbrains-mono
+        ];
+
+        nix.settings.experimental-features = [ "nix-command" "flakes" ];
+
+        system.configurationRevision = self.rev or self.dirtyRev or null;
+        system.stateVersion = 6;
+        nixpkgs.hostPlatform = system;
+
+        system.activationScripts.applications.text = let
+          env = pkgs.buildEnv {
+            name = "system-applications";
+            paths = config.environment.systemPackages;
+            pathsToLink = "/Applications";
+          };
+        in pkgs.lib.mkForce ''
+          echo "setting up /Applications..." >&2
+          rm -rf /Applications/Nix\ Apps
+          mkdir -p /Applications/Nix\ Apps
+          find ${env}/Applications -maxdepth 1 -type l -exec readlink '{}' + | while read -r src; do
+            app_name=$(basename "$src")
+            echo "copying $src" >&2
+            ${pkgs.mkalias}/bin/mkalias "$src" "/Applications/Nix Apps/$app_name"
+          done
+        '';
+      };
+
+    in {
+      darwinConfigurations."sitar-2" = nix-darwin.lib.darwinSystem {
+        modules = [
+          darwinConfiguration
+          nix-homebrew.darwinModules.nix-homebrew
+          {
+            nix-homebrew = {
+              enable = true;
+              enableRosetta = true;
+              user = "rohan";
+              autoMigrate = true;
+            };
+          }
+        ];
+      };
+
+      devShells.${system} = {
+        default = pkgs.mkShell {
+          name = "default-dev-shell";
+          buildInputs = sharedTools;
+          shellHook = ''
+            echo "👋 Welcome to the shared tools shell!"
+          '';
+        };
+
+        python = pythonShell;
+        flutter = flutterShell;
+        web = webShell;
+        full = fullShell;
+      };
+
+      packages.${system}.default = pkgs.writeShellScriptBin "hello-nix" ''
+        echo "👋 Hello from your nix-config flake!"
+      '';
     };
-
-    packages.${system}.default = pkgs.writeShellScriptBin "hello-nix" ''
-      echo "👋 Hello from your nix-config flake!"
-    '';
-  };
 }
-
