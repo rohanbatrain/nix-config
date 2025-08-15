@@ -7,6 +7,7 @@
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
     nix-homebrew.url = "github:zhaofengli/nix-homebrew";
+    # Add Home Manager as an input
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -84,12 +85,12 @@
         '';
       };
       
+      # Define a separate Home Manager configuration
       homeConfiguration = { pkgs, ... }: {
-        # The homeDirectory is managed by nix-darwin, so we don't need it here.
-        # home.homeDirectory = "/Users/rohan";
         home.username = "rohan";
-        home.stateVersion = "24.05"; 
+        home.stateVersion = "24.05"; # Home Manager state version
         
+        # Add your user-specific packages and configurations here
         home.packages = with pkgs; [
           git
         ];
@@ -107,14 +108,18 @@
         nixpkgs.config = {
           allowUnfree = true;
         };
+        
+        # Define the user and their home directory here
+        users.users.rohan = {
+          home = "/Users/rohan";
+          name = "rohan";
+        };
+
         environment.systemPackages = [
           pkgs.vim
           pkgs.mkalias
           pkgs.alacritty
         ];
-
-        # Define the user's home directory here.
-        users.users.rohan.home = "/Users/rohan";
         
         homebrew = {
           user = "rohan";
@@ -164,6 +169,7 @@
         modules = [
           darwinConfiguration
           nix-homebrew.darwinModules.nix-homebrew
+          # Add the Home Manager module
           home-manager.darwinModules.home-manager
           {
             nix-homebrew = {
@@ -173,6 +179,7 @@
               autoMigrate = true;
             };
             
+            # Link Home Manager configuration to the user "rohan"
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.users.rohan = homeConfiguration;
