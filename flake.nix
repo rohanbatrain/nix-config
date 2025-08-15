@@ -118,7 +118,7 @@
       # nix-homebrew config
       nix-homebrew = {
         enable = true;
-        enableRosetta = true;
+        enableRosetta = false;
         user = "rohan";
         taps = {
           "homebrew/homebrew-core" = homebrew-core;
