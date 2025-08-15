@@ -100,7 +100,7 @@
 
       environment.systemPackages = [
         pkgs.vim
-        pkgs.bitwarden-desktop
+        #pkgs.bitwarden-desktop
         pkgs.mkalias
         pkgs.alacritty
       ];
@@ -115,20 +115,28 @@
       system.stateVersion = 6;
       nixpkgs.hostPlatform = system;
 
-      # nix-homebrew config
       nix-homebrew = {
         enable = true;
-        enableRosetta = false;
+        enableRosetta = true;
         user = "rohan";
+	autoMigrate = true;
         taps = {
           "homebrew/homebrew-core" = homebrew-core;
           "homebrew/homebrew-cask" = homebrew-cask;
         };
         mutableTaps = false;
+	
       };
 
-      # Align homebrew taps with nix-homebrew config
       homebrew.taps = builtins.attrNames config.nix-homebrew.taps;
+
+      # Install Warp via Homebrew cask
+      homebrew.brews = ["mas"];
+      homebrew.casks = [ "warp" ];
+      #homebrew.masApps = {};
+      homebrew.onActivation.cleanup = "zap";
+      homebrew.onActivation.autoUpdate = "true";
+      homebrew.onActivation.upgrade = "true";
 
       system.activationScripts.applications.text = let
         env = pkgs.buildEnv {
