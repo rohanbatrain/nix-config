@@ -6,11 +6,15 @@
     flake-utils.url = "github:numtide/flake-utils";
     nix-darwin.url = "github:nix-darwin/nix-darwin/master";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+
+    # nix-homebrew only — no taps as inputs
+    nix-homebrew.url = "github:zhaofengli/nix-homebrew";
   };
 
-  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, ... }:
+  outputs = inputs@{ self, nixpkgs, flake-utils, nix-darwin, nix-homebrew, ... }:
   let
     system = "aarch64-darwin";
+
     pkgs = import nixpkgs {
       inherit system;
       config = {
@@ -82,26 +86,72 @@
     };
 
     # nix-darwin system configuration
-    darwinConfiguration = { pkgs, ... }: {
+    darwinConfiguration = { pkgs, config, ... }: {
+      nixpkgs.config = {
+        allowUnfree = true;
+      };
+
       environment.systemPackages = [
         pkgs.vim
+        pkgs.bitwarden-desktop
+        pkgs.mkalias
+        pkgs.alacritty
       ];
 
-      nix.settings.experimental-features = "nix-command flakes";
+      fonts.packages = [
+        pkgs.nerd-fonts.jetbrains-mono
+      ];
+
+      nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
       system.configurationRevision = self.rev or self.dirtyRev or null;
-
       system.stateVersion = 6;
       nixpkgs.hostPlatform = system;
 
-      # Optional: Enable any extra services or programs
-      # programs.fish.enable = true;
+      # ✅ nix-homebrew configuration with raw GitHub URLs
+      nix-homebrew = {
+        enable = true;
+        enableRosetta = true;
+        user = "rohan";
+
+        taps = {
+          "homebrew/homebrew-core" = "https://github.com/Homebrew/homebrew-core";
+          "homebrew/homebrew-cask" = "https://github.com/Homebrew/homebrew-cask";
+        };
+
+        mutableTaps = false;
+      };
+
+      # Align homebrew.taps
+      homebrew.taps = builtins.attrNames config.nix-homebrew.taps;
+
+      # System applications linking
+      system.activationScripts.applications.text = let
+        env = pkgs.buildEnv {
+          name = "system-applications";
+          paths = config.environment.systemPackages;
+          pathsToLink = "/Applications";
+        };
+      in
+        pkgs.lib.mkForce ''
+          echo "setting up /Applications..." >&2
+          rm -rf /Applications/Nix\ Apps
+          mkdir -p /Applications/Nix\ Apps
+          find ${env}/Applications -maxdepth 1 -type l -exec readlink '{}' + |
+          while read -r src; do
+            app_name=$(basename "$src")
+            echo "copying $src" >&2
+            ${pkgs.mkalias}/bin/mkalias "$src" "/Applications/Nix Apps/$app_name"
+          done
+        '';
     };
 
   in {
-    # Use device name: sitar-2
     darwinConfigurations."sitar-2" = nix-darwin.lib.darwinSystem {
-      modules = [ darwinConfiguration ];
+      modules = [
+        nix-homebrew.darwinModules.nix-homebrew
+        darwinConfiguration
+      ];
     };
 
     devShells.${system} = {

@@ -1,0 +1,192 @@
+Sure! Here's a complete Markdown document explaining how to use your Nix flake dev shells with `direnv`, including usage for remote flakes on GitHub, specifically for your Flutter and Python shells.
+
+---
+
+````markdown
+# Using Nix Flake DevShells with Direnv
+
+This document explains how to use `direnv` to automatically load your Nix development shells defined in a flake, including when the flake is hosted remotely on GitHub. It covers your multi-environment dev shells for Flutter, Python, and more.
+
+---
+
+## Contents
+
+- [Prerequisites](#prerequisites)  
+- [Direnv Setup](#direnv-setup)  
+- [Using DevShells from Local Flake](#using-devshells-from-local-flake)  
+- [Using DevShells from Remote GitHub Flake](#using-devshells-from-remote-github-flake)  
+- [Example `.envrc` files](#example-envrc-files)  
+- [Commands Cheat Sheet](#commands-cheat-sheet)  
+
+---
+
+## Prerequisites
+
+- You have a Nix flake that defines dev shells, e.g.:
+
+```nix
+devShells.aarch64-darwin = {
+  python = pythonShell;
+  flutter = flutterShell;
+  web = webShell;
+  full = fullShell;
+};
+````
+
+* You have `direnv` installed and enabled for your shell (bash, zsh, fish, etc.).
+
+---
+
+## Direnv Setup
+
+1. **Install direnv**
+
+   For nix-darwin systems, add to your configuration:
+
+   ```nix
+   { pkgs, ... }: {
+     environment.systemPackages = with pkgs; [ direnv ];
+     programs.direnv.enable = true;
+     programs.direnv.nix-direnv.enable = true; # for flake support
+   }
+   ```
+
+2. **Hook direnv into your shell**
+
+   Add the following to your shell config:
+
+   * For **zsh** (`~/.zshrc`):
+
+     ```sh
+     eval "$(direnv hook zsh)"
+     ```
+
+   * For **bash** (`~/.bashrc`):
+
+     ```sh
+     eval "$(direnv hook bash)"
+     ```
+
+   * For **fish** (`~/.config/fish/config.fish`):
+
+     ```fish
+     direnv hook fish | source
+     ```
+
+3. Restart your terminal or source the shell config file.
+
+---
+
+## Using DevShells from a Local Flake
+
+If your project directory contains the flake (`flake.nix`), do the following:
+
+1. Create a `.envrc` file in your project root:
+
+   ```sh
+   echo "use flake" > .envrc
+   ```
+
+   This loads the default dev shell.
+
+2. To use a specific dev shell, e.g., flutter:
+
+   ```sh
+   echo "use flake .#flutter" > .envrc
+   ```
+
+3. Authorize the `.envrc`:
+
+   ```sh
+   direnv allow
+   ```
+
+4. Now, `direnv` automatically loads the shell when you `cd` into the directory.
+
+---
+
+## Using DevShells from a Remote GitHub Flake
+
+If your flake is hosted remotely on GitHub (e.g., `github:rohanbatrain/nix-config`), and your current project does not have a flake:
+
+1. Create `.envrc` in your project directory with:
+
+   ```sh
+   use flake github:rohanbatrain/nix-config#aarch64-darwin.flutter
+   ```
+
+   Replace `flutter` with `python`, `web`, or `full` to load other shells.
+
+2. Run:
+
+   ```sh
+   direnv allow
+   ```
+
+3. Now, every time you `cd` into this project directory, the specified dev shell from the remote flake will load automatically.
+
+---
+
+## Example `.envrc` Files
+
+### Flutter dev shell (remote flake):
+
+```sh
+use flake github:rohanbatrain/nix-config#aarch64-darwin.flutter
+```
+
+### Python dev shell (remote flake):
+
+```sh
+use flake github:rohanbatrain/nix-config#aarch64-darwin.python
+```
+
+### Default dev shell (local flake):
+
+```sh
+use flake
+```
+
+### Full dev shell (local flake):
+
+```sh
+use flake .#full
+```
+
+---
+
+## Commands Cheat Sheet
+
+| Action                            | Command                                                                          |
+| --------------------------------- | -------------------------------------------------------------------------------- |
+| Create `.envrc` for Flutter       | `echo 'use flake .#flutter' > .envrc`                                            |
+| Create `.envrc` for remote Python | `echo 'use flake github:rohanbatrain/nix-config#aarch64-darwin.python' > .envrc` |
+| Authorize `.envrc`                | `direnv allow`                                                                   |
+| Reload `.envrc` after edits       | `direnv reload`                                                                  |
+| Revoke `.envrc`                   | `direnv deny`                                                                    |
+| Check current direnv status       | `direnv status`                                                                  |
+
+---
+
+## Additional Tips
+
+* Always run `direnv allow` after creating or modifying `.envrc`.
+* You can commit `.envrc` to your repo if it is safe to share.
+* Use architecture-specific shell names (`aarch64-darwin.python`) if your flake outputs are system-dependent.
+* For more portable flakes, consider refactoring your flake to export devShells without system prefixes.
+
+---
+
+If you want me to help generate `.envrc` files tailored for your setup or help refactor your flake for portability, just ask!
+
+---
+
+*Happy hacking with Nix and direnv!* 🚀
+
+```
+
+---
+
+Would you like me to save this as a file for you or assist with anything else?
+```
+
