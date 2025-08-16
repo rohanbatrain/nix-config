@@ -23,7 +23,7 @@ This repository uses Nix flakes to provide reproducible, modular development env
    ```bash
    git clone https://github.com/yourusername/nix-config.git
    cd nix-config
-````
+   ```
 
 2. **Enter any dev environment:**
 
