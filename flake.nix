@@ -134,7 +134,7 @@
           pkgs.alacritty
           pkgs.git
           pkgs.openssh
-          pkgs.uv
+          # pkgs.uv
           pkgs.vscode
           pkgs.flutter
           pkgs.mongodb-compass
@@ -211,8 +211,23 @@
               pkgs.nodePackages.prettier
             ];
             shellHook = ''
-              export PATH=${pkgs.pnpm}/bin:$PATH
-              echo "TypeScript dev shell ready: node $(node --version) pnpm $(pnpm --version 2>/dev/null || echo unknown) tsc $(tsc --version 2>/dev/null || echo unknown)"
+              # Minimal, TTY-only welcome message
+              if [ -t 1 ]; then
+                printf 'Welcome to Nix Shell by RohanBatra\n'
+              fi
+            '';
+          };
+          python = pkgs.mkShell {
+            buildInputs = [
+              pkgs.python310
+              pkgs.python310Packages.pip
+              pkgs.uv
+            ];
+            shellHook = ''
+              # Minimal, TTY-only welcome message for Python shell
+              if [ -t 1 ]; then
+                printf 'Welcome to Python Shell (uv) by RohanBatra\n'
+              fi
             '';
           };
         };
